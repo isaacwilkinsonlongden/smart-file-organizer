@@ -3,6 +3,9 @@ import sys
 
 from pathlib import Path
 
+from .filesystem import list_files
+from .organizer import plan_moves, PlannedMove
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     directory = Path(args.directory).expanduser().resolve()
@@ -12,8 +15,24 @@ def main(argv: list[str] | None = None) -> int:
     if not directory.is_dir():
         print(f"Error: path is not a directory: {directory}", file=sys.stderr)
         return 1
-    print(f"Target directory: {directory}")
-    print(f"Dry run: {args.dry_run}")
+    files = list_files(directory)
+    planned_moves = plan_moves(directory, files)
+    if not planned_moves:
+        print("Nothing to organize.")
+        return 0
+    grouped = group_moves(planned_moves)
+    if args.dry_run:
+        print(f"Scanned {len(files)} files.")
+        print(f"Found {len(planned_moves)} files to move.")
+        for category in sorted(
+            grouped,
+            key=lambda category: (category == "Other", category)
+        ):
+            moves = grouped[category]
+            print()
+            print(f"{category} ({len(moves)})")
+            for move in moves:
+                print(f"  {move.destination.name}")
     return 0
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -31,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Preview changes without moving files"
     )
     return parser 
+
+def group_moves(planned_moves: list[PlannedMove]) -> dict[str, list[PlannedMove]]:
+    grouped = {}
+    for move in planned_moves:
+        grouped.setdefault(move.category, []).append(move)
+    return grouped
 
 if __name__ == "__main__":
     sys.exit(main())
