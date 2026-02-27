@@ -22,6 +22,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     grouped = group_moves(planned_moves)
     if args.dry_run:
+        print()
         print(f"Scanned {len(files)} files.")
         print(f"Found {len(planned_moves)} files to move.")
         for category in sorted(
@@ -30,9 +31,11 @@ def main(argv: list[str] | None = None) -> int:
         ):
             moves = grouped[category]
             print()
-            print(f"{category} ({len(moves)})")
             for move in moves:
-                print(f"  {move.destination.name}")
+                print(
+                    f"{directory.name}/{move.source.relative_to(directory)} "
+                    f"-> {directory.name}/{move.destination.relative_to(directory)}"
+                )
     return 0
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
