@@ -14,8 +14,6 @@ def plan_moves(directory: Path, files: list[Path]) -> list[PlannedMove]:
     for file in files:
         category = get_category(file)
         destination = directory / category / file.name
-        if file == destination or destination.exists():
-            continue
         planned_moves.append(PlannedMove(
             source=file,
             destination=destination,

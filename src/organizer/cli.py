@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
+from .executor import execute_moves, ExecutionResult
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
@@ -16,9 +17,8 @@ def main(argv: list[str] | None = None) -> int:
     if not planned_moves:
         print("Nothing to organize.")
         return 0
-    grouped = group_moves(planned_moves)
-    if args.dry_run:
-        print_dry_run(files, planned_moves, grouped, directory)
+    result = execute_moves(planned_moves, args.dry_run)
+    print_execution(result, directory, files, args.dry_run)
     return 0
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -46,21 +46,30 @@ def validate_directory(directory: Path) -> bool:
         return False
     return True
 
-def group_moves(planned_moves: list[PlannedMove]) -> dict[str, list[PlannedMove]]:
+def group_moves(
+        planned_moves: list[PlannedMove]
+    ) -> dict[str, list[PlannedMove]]:
     grouped = {}
     for move in planned_moves:
         grouped.setdefault(move.category, []).append(move)
     return grouped
 
-def print_dry_run(
-        files: list[Path],
-        planned_moves: list[PlannedMove],
-        grouped: dict[str, list[PlannedMove]],
+def print_execution(
+        result: ExecutionResult,
         directory: Path,
-) -> None:
+        files: list[Path],
+        dry_run: bool = False
+    ) -> None:
     print()
-    print(f"Scanned {len(files)} files.")
-    print(f"Found {len(planned_moves)} files to move.")
+    print(f"Scanned {len(files)} files")
+    print(f"Found {len(result.moved)} files to move")
+    print(f"Skipped {len(result.skipped)} files")
+    print()
+    if dry_run:
+        print("Dry run (no changes made)")
+    else:
+        print("Executing moves:")
+    grouped = group_moves(result.moved)
     for category in sorted(
         grouped,
         key=lambda c: (c == "Other", c)
@@ -72,7 +81,20 @@ def print_dry_run(
                 f"{directory.name}/{move.source.relative_to(directory)} "
                 f"-> {directory.name}/{move.destination.relative_to(directory)}"
             )
-        
+    if result.skipped:
+        print()
+        print("Skipped:")
+        for skipped_file in result.skipped:
+            print(
+                f"{directory.name}/"
+                f"{skipped_file.source.relative_to(directory)}"
+            )
+    if not dry_run:
+        print()
+        print(f"Execution complete. "
+              f"Moved {len(result.moved)}, skipped {len(result.skipped)}"
+        )
+     
 if __name__ == "__main__":
     sys.exit(main())
 
