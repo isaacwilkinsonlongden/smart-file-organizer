@@ -15,3 +15,15 @@ def test_main_returns_zero_on_execution(tmp_path):
     exit_code = main([str(tmp_path)])
 
     assert exit_code == 0
+
+
+def test_main_returns_non_zero_on_fail_collision(tmp_path):
+    (tmp_path / "photo.jpg").touch()
+
+    dest_dir = tmp_path / "Images"
+    dest_dir.mkdir()
+    (dest_dir / "photo.jpg").touch()
+
+    exit_code = main([str(tmp_path), "--collision", "fail"])
+
+    assert exit_code == 1

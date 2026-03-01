@@ -17,7 +17,11 @@ def main(argv: list[str] | None = None) -> int:
     if not planned_moves:
         print("Nothing to organize.")
         return 0
-    result = execute_moves(planned_moves, args.dry_run)
+    try:
+        result = execute_moves(planned_moves, args.dry_run, args.collision)
+    except FileExistsError as e:
+        print(f"Error: {e}")
+        return 1
     print_execution(result, directory, files, args.dry_run)
     return 0
 
@@ -31,9 +35,15 @@ def build_parser() -> argparse.ArgumentParser:
     ) 
     parser.add_argument("directory", help="Target directory to organize")
     parser.add_argument(
-        "-n", "--dry-run",
+        "-d", "--dry-run",
         action="store_true",
         help="Preview changes without moving files"
+    )
+    parser.add_argument(
+        "-c", "--collision",
+        choices=("rename", "skip", "fail"),
+        default="rename",
+        help="What to do if the destination file already exists: rename (default), skip, or fail"
     )
     return parser 
 
