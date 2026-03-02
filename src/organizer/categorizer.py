@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from .config import Config
+
 EXT_TO_CATEGORY = {
 
     # ========================
@@ -121,6 +123,6 @@ EXT_TO_CATEGORY = {
     ".iso": "Archives",
 }
 
-def get_category(path: Path) -> str:
+def get_category(path: Path, config: Config) -> str:
     ext = path.suffix.lower()
-    return EXT_TO_CATEGORY.get(ext, "Other")
+    return config.ext_to_category.get(ext, config.default_category)

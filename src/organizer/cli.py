@@ -6,6 +6,7 @@ from pathlib import Path
 from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
 from .executor import execute_moves, ExecutionResult
+from .config import resolve_config
 
 def run() -> None:
     raise SystemExit(main())
@@ -16,7 +17,8 @@ def main(argv: list[str] | None = None) -> int:
     if not validate_directory(directory):
         return 1
     files = list_files(directory)
-    planned_moves = plan_moves(directory, files)
+    config = resolve_config()
+    planned_moves = plan_moves(directory, files, config)
     if not planned_moves:
         print("Nothing to organize.")
         return 0
