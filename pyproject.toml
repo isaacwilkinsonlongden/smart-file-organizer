@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-file-organizer"
+version = "0.1.0"
+description = "A CLI tool to organize files into categorized folders."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+organize = "organizer.cli:run"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

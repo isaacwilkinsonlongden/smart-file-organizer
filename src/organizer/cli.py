@@ -7,6 +7,9 @@ from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
 from .executor import execute_moves, ExecutionResult
 
+def run() -> None:
+    raise SystemExit(main())
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     directory = Path(args.directory).expanduser().resolve()
@@ -18,7 +21,11 @@ def main(argv: list[str] | None = None) -> int:
         print("Nothing to organize.")
         return 0
     try:
-        result = execute_moves(planned_moves, args.dry_run, args.collision)
+        result = execute_moves(
+            planned_moves, 
+            dry_run=args.dry_run,
+            collision_policy=args.collision,
+            )
     except FileExistsError as e:
         print(f"Error: {e}")
         return 1
@@ -86,9 +93,10 @@ def print_execution(
     ):
         moves = grouped[category]
         print()
+        print(f"{category} ({len(moves)})")
         for move in moves:
             print(
-                f"{directory.name}/{move.source.relative_to(directory)} "
+                f"   {directory.name}/{move.source.relative_to(directory)} "
                 f"-> {directory.name}/{move.destination.relative_to(directory)}"
             )
     if result.skipped:
@@ -106,5 +114,5 @@ def print_execution(
         )
      
 if __name__ == "__main__":
-    sys.exit(main())
+    run()
 
