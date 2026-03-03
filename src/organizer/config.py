@@ -167,3 +167,27 @@ def load_user_config(path: Path) -> dict:
             f"Config file {path} must contain a TOML table at the top level."
         )
     return data
+
+
+def init_config() -> Path:
+    path = get_config_path()
+    if path.exists():
+        raise ConfigError(
+            f"Config file already exists at {path}. "
+            "Use organize config reset to overwrite"
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = """[general]
+merge_default_categories = true
+fallback_category = "Other"
+    
+[extensions]
+# Add overrides like:
+# ".mp3" = "MP3"
+"""
+    try:
+        path.write_text(content, encoding="utf-8")
+    except OSError as e:
+        raise ConfigError(f"Unable to write config file {path}: {e}") from e
+    return path
+
