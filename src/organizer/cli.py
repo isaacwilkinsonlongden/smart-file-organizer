@@ -6,12 +6,23 @@ from pathlib import Path
 from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
 from .executor import execute_moves, ExecutionResult
-from .config import resolve_config
+from .config import resolve_config, get_config_path
 
 def run() -> None:
     raise SystemExit(main())
 
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
+        print("Usage: organize <directory> or organize config <command>")
+        return 1
+    if argv[0] == "config":
+        args = parse_args_config(argv[1:])
+        if args.command == "path":
+            print(get_config_path())
+            return 0
+        
     args = parse_args(argv)
     directory = Path(args.directory).expanduser().resolve()
     if not validate_directory(directory):
@@ -55,6 +66,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="What to do if the destination file already exists: rename (default), skip, or fail"
     )
     return parser 
+
+def parse_args_config(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = build_parser_config()
+    return parser.parse_args(argv)
+
+def build_parser_config() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="config commands"
+    )
+    parser.add_argument(
+        "command",
+        choices=["path"],
+        default="path",
+        help="config command"
+    )
+    return parser
 
 def validate_directory(directory: Path) -> bool:
     if not directory.exists():

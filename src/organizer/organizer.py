@@ -17,11 +17,16 @@ def plan_moves(
     ) -> list[PlannedMove]:
     planned_moves = []
     for file in files:
-        category = get_category(file, config)
-        destination = directory / category / file.name
-        planned_moves.append(PlannedMove(
-            source=file,
-            destination=destination,
-            category=category
-        ))
+        category = get_category(
+            file,
+            config.ext_to_category,
+            config.fallback_category
+        )
+        if category is not None:
+            destination = directory / category / file.name
+            planned_moves.append(PlannedMove(
+                source=file,
+                destination=destination,
+                category=category
+            ))
     return planned_moves
