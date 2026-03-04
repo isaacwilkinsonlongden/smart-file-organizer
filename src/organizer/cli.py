@@ -5,7 +5,7 @@ from pathlib import Path
 from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
 from .executor import execute_moves, ExecutionResult
-from .config import ConfigError, resolve_config, get_config_path, init_config
+from .config import ConfigError, resolve_config, get_config_path, init_config, set_extension
 
 
 def run() -> None:
@@ -32,6 +32,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Error: {e}", file=sys.stderr)
                 return 1
             print(f"Created config at {path}")
+            return 0
+        
+        if args.config_command == "set":
+            try:
+                path = set_extension(args.extension, args.category)
+            except ConfigError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                return 1
+            print(f"Updated config at {path}")
             return 0
 
         # Should be unreachable due to argparse choices
@@ -121,6 +130,19 @@ def build_parser() -> argparse.ArgumentParser:
         "init",
         help="Create a minimal default config file (if missing)",
         description="Create a minimal default config file if one does not already exist.",
+    )
+    set_parser = config_sub.add_parser(
+        "set",
+        help="Add or update an extension mapping",
+        description="Add or update an extension mapping in the config file.",
+    )
+    set_parser.add_argument(
+        "extension",
+        help="File extension to map (e.g. .mp3)",
+    )
+    set_parser.add_argument(
+        "category",
+        help="Category folder name (e.g. Music)",
     )
 
     return parser

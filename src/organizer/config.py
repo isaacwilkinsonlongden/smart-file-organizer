@@ -120,30 +120,8 @@ def normalize_extensions(extensions: dict) -> dict[str, str]:
 
     new_extensions: dict[str, str] = {}
     for ext, category in extensions.items():
-        if not isinstance(ext, str):
-            raise ConfigError(
-                "extensions keys must be strings like \".mp3\". "
-                f"Got key {ext!r} ({type(ext).__name__})."
-            )
-        if not isinstance(category, str):
-            raise ConfigError(
-                "extensions values must be strings (folder/category names). "
-                f"For key {ext!r}, got {category!r} ({type(category).__name__})."
-            )
-
-        ext_norm = ext.strip().lower()
-        if ext_norm == "":
-            raise ConfigError("extensions contains an empty extension key.")
-        if not ext_norm.startswith("."):
-            ext_norm = "." + ext_norm
-
-        cat_norm = category.strip()
-        if cat_norm == "":
-            raise ConfigError(f"extensions[{ext!r}] maps to an empty category name.")
-        if "/" in cat_norm or "\\" in cat_norm:
-            raise ConfigError(
-                f"extensions[{ext!r}] category cannot contain path separators ('/' or '\\')."
-            )
+        ext_norm = _normalize_ext(ext)
+        cat_norm = _normalize_category(category, ext)
 
         new_extensions[ext_norm] = cat_norm
 
@@ -169,6 +147,34 @@ def load_user_config(path: Path) -> dict:
     return data
 
 
+def _write_user_config(path: Path, general: dict, extensions: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    general_list = ["[general]"]
+    extensions_list = ["[extensions]"]
+    for key in sorted(general):
+        general_list.append(f"{key} = {_toml_value(general[key])}")
+    for key in sorted(extensions):
+        extensions_list.append(f'"{key}" = {_toml_value(extensions[key])}')
+    joined_list = general_list + [""] + extensions_list
+    try:
+        path.write_text("\n".join(joined_list), encoding="utf-8")
+    except OSError as e:
+        raise ConfigError(f"Unable to write config file {path}: {e}") from e
+    
+    
+def _toml_value(v):
+    if v is True:
+        new_v = "true"
+        return new_v
+    if v is False:
+        new_v = "false"
+        return new_v
+    if v is None:
+        new_v = "null"
+        return new_v
+    return f'"{v}"'
+
+
 def init_config() -> Path:
     path = get_config_path()
     if path.exists():
@@ -190,4 +196,52 @@ fallback_category = "Other"
     except OSError as e:
         raise ConfigError(f"Unable to write config file {path}: {e}") from e
     return path
+
+
+def set_extension(ext: str, category: str) -> Path:
+    path = get_config_path()
+    if not path.exists():
+        init_config()
+    data = load_user_config(path)
+    general = data.get("general", {})
+    if not isinstance(general, dict):
+        raise ConfigError("[general] must be a table")
+    extensions = data.get("extensions", {})
+    if not isinstance(extensions, dict):
+        raise ConfigError("[extensions] must be a table")
+    ext_norm = _normalize_ext(ext)
+    cat_norm = _normalize_category(category, ext_norm)
+    extensions[ext_norm] = cat_norm
+    _write_user_config(path, general, extensions)
+    return path
+
+
+def _normalize_ext(ext: str) -> str:
+    if not isinstance(ext, str):
+        raise ConfigError(
+            "extensions keys must be strings like \".mp3\". "
+            f"Got key {ext!r} ({type(ext).__name__})."
+        )
+    ext_norm = ext.strip().lower()
+    if ext_norm == "":
+        raise ConfigError("extensions contains an empty extension key.")
+    if not ext_norm.startswith("."):
+        ext_norm = "." + ext_norm
+    return ext_norm
+
+
+def _normalize_category(category: str, ext: str) -> str:
+    if not isinstance(category, str):
+        raise ConfigError(
+            "extensions values must be strings (folder/category names). "
+            f"For key {ext!r}, got {category!r} ({type(category).__name__})."
+        )
+    cat_norm = category.strip()
+    if cat_norm == "":
+        raise ConfigError(f"extensions[{ext!r}] maps to an empty category name.")
+    if "/" in cat_norm or "\\" in cat_norm:
+        raise ConfigError(
+            f"extensions[{ext!r}] category cannot contain path separators ('/' or '\\')."
+        )
+    return cat_norm
 
