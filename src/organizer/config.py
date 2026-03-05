@@ -163,16 +163,22 @@ def _write_user_config(path: Path, general: dict, extensions: dict) -> None:
     
     
 def _toml_value(v):
+    # Strict types: bool, None, str only
     if v is True:
-        new_v = "true"
-        return new_v
+        return "true"
     if v is False:
-        new_v = "false"
-        return new_v
+        return "false"
     if v is None:
-        new_v = "null"
-        return new_v
-    return f'"{v}"'
+        return "null"
+    if isinstance(v, str):
+        # Escape backslashes and quotes for TOML basic strings
+        escaped = v.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+
+    raise ConfigError(
+        "Unsupported value type in config. Expected bool, null, or string; "
+        f"got {type(v).__name__}: {v!r}"
+    )
 
 
 def init_config() -> Path:
@@ -206,12 +212,39 @@ def set_extension(ext: str, category: str) -> Path:
     general = data.get("general", {})
     if not isinstance(general, dict):
         raise ConfigError("[general] must be a table")
+    if "merge_default_categories" not in general:
+        general["merge_default_categories"] = True
+    if "fallback_category" not in general:
+        general["fallback_category"] = "Other"
     extensions = data.get("extensions", {})
     if not isinstance(extensions, dict):
         raise ConfigError("[extensions] must be a table")
     ext_norm = _normalize_ext(ext)
     cat_norm = _normalize_category(category, ext_norm)
     extensions[ext_norm] = cat_norm
+    _write_user_config(path, general, extensions)
+    return path
+
+
+def unset_extension(ext: str) -> Path:
+    path = get_config_path()
+    if not path.exists():
+        raise ConfigError("No config file exists. Run 'organize config init' first")
+    data = load_user_config(path)
+    general = data.get("general", {})
+    if not isinstance(general, dict):
+        raise ConfigError("[general] must be a table")
+    if "merge_default_categories" not in general:
+        general["merge_default_categories"] = True
+    if "fallback_category" not in general:
+        general["fallback_category"] = "Other"
+    extensions = data.get("extensions", {})
+    if not isinstance(extensions, dict):
+        raise ConfigError("[extensions] must be a table")
+    ext_norm = _normalize_ext(ext)
+    if ext_norm not in extensions:
+        return path
+    extensions.pop(ext_norm)
     _write_user_config(path, general, extensions)
     return path
 
