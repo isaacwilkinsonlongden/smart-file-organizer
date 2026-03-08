@@ -204,6 +204,19 @@ fallback_category = "Other"
     return path
 
 
+def show_config() -> str:
+    path = get_config_path()
+    if not path.exists():
+        return "No config file exists yet. Run 'organize config init' to create one\n"
+    try:
+        text = path.read_text(encoding="utf-8")
+        if not text.endswith("\n"):
+            text += "\n"
+        return text
+    except OSError as e:
+        raise ConfigError(f"Unable to read config file {path}: {e}") from e
+
+
 def set_extension(ext: str, category: str) -> Path:
     path = get_config_path()
     if not path.exists():

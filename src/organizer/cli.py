@@ -5,7 +5,7 @@ from pathlib import Path
 from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
 from .executor import execute_moves, ExecutionResult
-from .config import ConfigError, resolve_config, get_config_path, init_config, set_extension, unset_extension
+from .config import ConfigError, resolve_config, get_config_path, init_config, set_extension, unset_extension, show_config
 
 
 def run() -> None:
@@ -50,6 +50,14 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Error: {e}", file=sys.stderr)
                 return 1
             print(f"Updated config at {path}")
+            return 0
+        
+        if args.config_command == "show":
+            try:
+                print(show_config())
+            except ConfigError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                return 1
             return 0
 
         # Should be unreachable due to argparse choices
@@ -156,11 +164,16 @@ def build_parser() -> argparse.ArgumentParser:
     unset_parser = config_sub.add_parser(
         "unset",
         help="Remove an extension mapping",
-        description="Remove an extension mapping in the config file"
+        description="Remove an extension mapping in the config file",
     )
     unset_parser.add_argument(
         "extension",
-        help="File extension to map (e.g. .mp3)"
+        help="File extension to map (e.g. .mp3)",
+    )
+    config_sub.add_parser(
+        "show",
+        help="Show the current config file",
+        description="Print the contents of the current config file",
     )
 
     return parser
