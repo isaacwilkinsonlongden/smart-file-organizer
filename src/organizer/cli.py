@@ -5,7 +5,7 @@ from pathlib import Path
 from .filesystem import list_files
 from .organizer import plan_moves, PlannedMove
 from .executor import execute_moves, ExecutionResult
-from .config import ConfigError, resolve_config, get_config_path, init_config, set_extension, unset_extension, show_config
+from .config import ConfigError, resolve_config, get_config_path, init_config, set_extension, unset_extension, show_config, reset_config_default, reset_config_blank
 
 
 def run() -> None:
@@ -59,6 +59,24 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Error: {e}", file=sys.stderr)
                 return 1
             return 0
+        
+        if args.config_command == "reset":
+            if args.default:
+                try:
+                    path = reset_config_default()
+                except ConfigError as e:
+                    print(f"Error: {e}", file=sys.stderr)
+                    return 1
+                print(f"Reset to default config at {path}")
+                return 0
+            elif args.blank:
+                try:
+                    path = reset_config_blank()
+                except ConfigError as e:
+                    print(f"Error: {e}", file=sys.stderr)
+                    return 1
+                print(f"Reset to blank config at {path}")
+                return 0
 
         # Should be unreachable due to argparse choices
         print("Unknown config command", file=sys.stderr)
@@ -174,6 +192,22 @@ def build_parser() -> argparse.ArgumentParser:
         "show",
         help="Show the current config file",
         description="Print the contents of the current config file",
+    )
+    reset_parser = config_sub.add_parser(
+        "reset",
+        help="Reset the config to default or blank",
+        description="Reset the config file to the default config or a blank config",
+    )
+    mode_group = reset_parser.add_mutually_exclusive_group(required=True)
+    mode_group.add_argument(
+        "--default",
+        action="store_true",
+        help="Reset the config to the default minimal config",
+    )
+    mode_group.add_argument(
+        "--blank",
+        action="store_true",
+        help="Reset the config to a blank config (No merge defaults, no fallback category)",
     )
 
     return parser

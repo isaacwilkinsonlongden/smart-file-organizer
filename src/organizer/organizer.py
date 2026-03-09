@@ -20,7 +20,8 @@ def plan_moves(
         category = get_category(
             file,
             config.ext_to_category,
-            config.fallback_category
+            config.fallback_category,
+            config.use_fallback_category
         )
         if category is not None:
             destination = directory / category / file.name

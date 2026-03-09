@@ -12,7 +12,8 @@ CONFIG_FILE = "config.toml"
 @dataclass
 class Config:
     ext_to_category: dict[str, str]
-    fallback_category: str | None
+    fallback_category: str
+    use_fallback_category: bool
 
 
 class ConfigError(Exception):
@@ -22,7 +23,8 @@ class ConfigError(Exception):
 def resolve_config() -> Config:
     # Program defaults (current behavior if no config file exists)
     merge_default_categories: bool = True
-    fallback_category: str | None = "Other"
+    fallback_category: str = "Other"
+    use_fallback_category: bool = True
 
     config_path = get_config_path()
     user_config = load_user_config(config_path)
@@ -62,25 +64,31 @@ def resolve_config() -> Config:
         merge_default_categories = mdc
 
         fc = config_general.get("fallback_category", "Other")
-        if fc is None:
-            fallback_category = None
-        elif isinstance(fc, str):
-            fc = fc.strip()
-            if fc == "":
-                raise ConfigError(
-                    "general.fallback_category cannot be an empty string. "
-                    "Use a non-empty string (e.g. \"Other\") or null."
-                )
-            if "/" in fc or "\\" in fc:
-                raise ConfigError(
-                    "general.fallback_category cannot contain path separators ('/' or '\\')."
-                )
-            fallback_category = fc
-        else:
+        if not isinstance(fc, str):
             raise ConfigError(
-                "general.fallback_category must be a string or null. "
+                "general.fallback_category must be a string. "
                 f"Got {fc!r} ({type(fc).__name__})."
             )
+
+        fc = fc.strip()
+        if fc == "":
+            raise ConfigError(
+                "general.fallback_category cannot be an empty string. "
+                "Use a non-empty string (e.g. \"Other\")."
+            )
+        if "/" in fc or "\\" in fc:
+            raise ConfigError(
+                "general.fallback_category cannot contain path separators ('/' or '\\')."
+            )
+        fallback_category = fc
+
+        ufc = config_general.get("use_fallback_category", True)
+        if not isinstance(ufc, bool):
+            raise ConfigError(
+                "general.use_fallback_category must be a bool. "
+                f"got {ufc!r} ({type(ufc).__name__})"
+            )
+        use_fallback_category = ufc
 
     # Build base mapping
     ext_to_category: dict[str, str]
@@ -94,7 +102,11 @@ def resolve_config() -> Config:
         normalized = normalize_extensions(config_extensions)
         ext_to_category.update(normalized)
 
-    return Config(ext_to_category=ext_to_category, fallback_category=fallback_category)
+    return Config(
+        ext_to_category=ext_to_category,
+        fallback_category=fallback_category,
+        use_fallback_category=use_fallback_category,
+    )
 
 
 def get_config_path() -> Path:
@@ -189,19 +201,60 @@ def init_config() -> Path:
             "Use organize config reset to overwrite"
         )
     path.parent.mkdir(parents=True, exist_ok=True)
+    content = _default_user_config_text()
+    try:
+        path.write_text(content, encoding="utf-8")
+    except OSError as e:
+        raise ConfigError(f"Unable to write config file {path}: {e}") from e
+    return path
+
+
+def reset_config_default() -> Path:
+    path = get_config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = _default_user_config_text()
+    try:
+        path.write_text(content, encoding="utf-8")
+    except OSError as e:
+        raise ConfigError(f"Unable to write config file {path}: {e}") from e
+    return path
+
+
+def reset_config_blank() -> Path:
+    path = get_config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = _blank_user_config_text()
+    try:
+        path.write_text(content, encoding="utf-8")
+    except OSError as e:
+        raise ConfigError(f"Unable to write config file {path}: {e}") from e
+    return path
+
+
+def _default_user_config_text() -> str:
     content = """[general]
 merge_default_categories = true
+use_fallback_category = true
 fallback_category = "Other"
     
 [extensions]
 # Add overrides like:
 # ".mp3" = "MP3"
 """
-    try:
-        path.write_text(content, encoding="utf-8")
-    except OSError as e:
-        raise ConfigError(f"Unable to write config file {path}: {e}") from e
-    return path
+    return content
+
+
+def _blank_user_config_text() -> str:
+    content = """[general]
+merge_default_categories = false
+use_fallback_category = false
+fallback_category = "Other"
+    
+[extensions]
+# Add overrides like:
+# ".mp3" = "MP3"
+"""
+    return content
 
 
 def show_config() -> str:
@@ -227,6 +280,8 @@ def set_extension(ext: str, category: str) -> Path:
         raise ConfigError("[general] must be a table")
     if "merge_default_categories" not in general:
         general["merge_default_categories"] = True
+    if "use_fallback_category" not in general:
+        general["use_fallback_category"] = True
     if "fallback_category" not in general:
         general["fallback_category"] = "Other"
     extensions = data.get("extensions", {})
@@ -249,6 +304,8 @@ def unset_extension(ext: str) -> Path:
         raise ConfigError("[general] must be a table")
     if "merge_default_categories" not in general:
         general["merge_default_categories"] = True
+    if "use_fallback_category" not in general:
+        general["use_fallback_category"] = True
     if "fallback_category" not in general:
         general["fallback_category"] = "Other"
     extensions = data.get("extensions", {})
