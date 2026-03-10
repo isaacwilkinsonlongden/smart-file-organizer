@@ -80,10 +80,31 @@ Downloads/
 After running the organizer:
 
 ```
-Downloads/
+Organized/
     Images/photo.jpg
     Documents/report.pdf
     Videos/video.mp4
+```
+
+Example console output:
+
+```
+Scanned 3 files
+Found 3 files to move
+Skipped 0 files
+
+Executing moves:
+
+Documents (1)
+   Downloads/report.pdf -> Organized/Documents/report.pdf
+
+Images (1)
+   Downloads/photo.jpg -> Organized/Images/photo.jpg
+
+Videos (1)
+   Downloads/video.mp4 -> Organized/Videos/video.mp4
+
+Execution complete. Moved 3, skipped 0
 ```
 
 ---
@@ -281,6 +302,8 @@ Set custom extension mappings:
 ```bash
 organize config set .mp3 Music
 organize config set .txt Documents
+organize config set .jpg Images
+organize config set .png Images
 ```
 
 Preview organization:
@@ -297,10 +320,55 @@ Flags:
 -d  → --dry-run
 ```
 
+Example console output:
+
+```
+Scanned 5 files
+Found 4 files to move
+Skipped 1 files
+
+Dry run (no changes made)
+
+Documents (1)
+   Downloads/notes.txt -> home/Documents/notes.txt
+
+Images (2)
+   Downloads/photo.jpg -> home/Images/photo.jpg
+   Downloads/wallpaper.png -> home/Images/wallpaper.png
+
+Music (1)
+   Downloads/song.mp3 -> home/Music/song.mp3
+
+Skipped:
+   Downloads/.hiddenfile
+```
+
 Run the actual organization:
 
 ```bash
 organize run -r ~/Downloads -o ~/
+```
+
+Example output:
+
+```
+Scanned 5 files
+Found 4 files to move
+Skipped 1 files
+
+Executing moves:
+
+Documents (1)
+   Downloads/notes.txt -> home/Documents/notes.txt
+
+Images (2)
+   Downloads/photo.jpg -> home/Images/photo.jpg
+   Downloads/wallpaper.png -> home/Images/wallpaper.png
+
+Music (1)
+   Downloads/song.mp3 -> home/Music/song.mp3
+
+Execution complete. Moved 4, skipped 1
 ```
 
 ---
