@@ -313,7 +313,7 @@ def _toml_value(v):
 
     raise ConfigError(
         "Unsupported value type in config. Expected bool, null, or string; "
-        f"got {type(v).__name__}: {v!r}"
+        f"Got {type(v).__name__}: {v!r}"
     )
 
 
