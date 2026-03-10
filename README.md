@@ -11,7 +11,7 @@ Smart File Organizer scans a directory and moves files into folders such as **Im
 
 ---
 
-## Features
+# Features
 
 - Organize files by extension into categorized folders
 - Recursive directory scanning
@@ -26,19 +26,28 @@ Smart File Organizer scans a directory and moves files into folders such as **Im
 
 # Installation
 
-There are two ways to install the tool.
+Because many Linux distributions now protect the system Python environment (PEP 668), installing CLI tools globally with `pip` is often disabled. The recommended approaches are using **pipx** or installing inside a **virtual environment**.
 
 ---
 
-## Option 1 — Install from GitHub (recommended for users)
+# Option 1 — Install with pipx (recommended for CLI tools)
 
-Install directly from the GitHub repository:
+`pipx` installs the application in its own isolated environment while still making the CLI command globally available.
+
+Install pipx (Ubuntu/Debian):
 
 ```bash
-pip install git+https://github.com/isaacwilkinsonlongden/smart-file-organizer
+sudo apt install pipx
+pipx ensurepath
 ```
 
-After installation, the CLI command becomes available:
+Then install the tool directly from GitHub:
+
+```bash
+pipx install git+https://github.com/isaacwilkinsonlongden/smart-file-organizer
+```
+
+After installation you can run:
 
 ```bash
 organize -h
@@ -46,9 +55,34 @@ organize -h
 
 ---
 
-## Option 2 — Clone the repository (recommended for development)
+# Option 2 — Install inside a virtual environment
 
-Clone the repository and install it in editable mode:
+Create a virtual environment and install the tool from GitHub:
+
+```bash
+python3 -m venv sfo-env
+source sfo-env/bin/activate
+
+pip install git+https://github.com/isaacwilkinsonlongden/smart-file-organizer
+```
+
+Now the command will be available inside the environment:
+
+```bash
+organize -h
+```
+
+Deactivate the environment when finished:
+
+```bash
+deactivate
+```
+
+---
+
+# Option 3 — Clone the repository (development install)
+
+If you want to work on the project or modify the source code:
 
 ```bash
 git clone https://github.com/isaacwilkinsonlongden/smart-file-organizer
@@ -64,7 +98,7 @@ Editable installs allow changes to the source code to immediately affect the ins
 
 ---
 
-## Basic Usage
+# Basic Usage
 
 Organize files in a directory:
 
@@ -131,7 +165,7 @@ Execution complete. Moved 3, skipped 0
 
 ---
 
-## Configuration
+# Configuration
 
 The tool supports a user configuration file that allows customization of file extension mappings.
 
@@ -165,7 +199,7 @@ organize config unset .mp3
 
 ---
 
-## Disable Default Extension Mappings
+# Disable Default Extension Mappings
 
 To disable merging with the default extension mappings, you can either edit the TOML file directly or reset the configuration using the CLI.
 
@@ -182,7 +216,7 @@ use_fallback_category = false
 
 ---
 
-## Reset Configuration
+# Reset Configuration
 
 Restore the default configuration:
 
@@ -192,7 +226,7 @@ organize config reset --default
 
 ---
 
-## Example Configuration File
+# Example Configuration File
 
 The configuration file is stored in:
 
@@ -215,7 +249,7 @@ fallback_category = "Other"
 
 ---
 
-## Collision Handling
+# Collision Handling
 
 When a file already exists at the destination, the tool supports three behaviors:
 
@@ -235,7 +269,7 @@ If no `--collision` or `-c` flag is provided, the default behavior is **rename**
 
 ---
 
-## Recursive Mode
+# Recursive Mode
 
 Recursive mode scans subdirectories and organizes files found within them.
 
@@ -247,7 +281,7 @@ Files already inside active category folders are skipped to avoid reorganizing a
 
 ---
 
-## Command Help
+# Command Help
 
 Use the `--help` or `-h` flag to display detailed usage information for any command.
 
@@ -263,7 +297,7 @@ organize config set -h
 
 ---
 
-## Project Structure
+# Project Structure
 
 ```
 src/organizer/
@@ -293,7 +327,7 @@ The project follows a modular structure:
 
 ---
 
-## Running Tests
+# Running Tests
 
 The project includes **48 unit tests** covering the CLI, planner logic, configuration handling, and execution behavior.
 
@@ -305,7 +339,7 @@ pytest
 
 ---
 
-## Example Workflow
+# Example Workflow
 
 Initialize configuration:
 
@@ -395,12 +429,12 @@ Execution complete. Moved 4, skipped 1
 
 ---
 
-## License
+# License
 
 MIT License
 
 ---
 
-## Author
+# Author
 
 Isaac Wilkinson-Longden
