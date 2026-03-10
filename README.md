@@ -9,6 +9,10 @@ A command-line tool that automatically organizes files into categorized folders 
 
 Smart File Organizer scans a directory and moves files into folders such as **Images**, **Documents**, **Videos**, and more. It supports recursive scanning, customizable file mappings, collision handling, and a user-editable configuration file.
 
+## Example CLI Output
+
+![CLI Demo](screenshots/demo-output.png)
+
 ---
 
 # Features
