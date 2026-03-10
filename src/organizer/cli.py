@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         if not validate_directory(directory):
             return 1
 
-        files = list_files(directory)
+        files = list_files(directory, recursive=args.recursive)
 
         try:
             config = resolve_config()
@@ -95,7 +95,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Error: {e}", file=sys.stderr)
             return 1
 
-        planned_moves = plan_moves(directory, files, config)
+        planned_moves = plan_moves(
+                            directory,
+                            files,
+                            config, 
+                            recursive=args.recursive
+                        )
         if not planned_moves:
             print("Nothing to organize.")
             return 0
@@ -145,6 +150,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("rename", "skip", "fail"),
         default="rename",
         help="What to do if the destination file already exists: rename (default), skip, or fail",
+    )
+    run_parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Recursively organize files in child directories"
     )
 
     # ---- config ----
