@@ -24,21 +24,43 @@ Smart File Organizer scans a directory and moves files into folders such as **Im
 
 ---
 
-## Installation
+# Installation
 
-Clone the repository and install the project in editable mode:
+There are two ways to install the tool.
+
+---
+
+## Option 1 — Install from GitHub (recommended for users)
+
+Install directly from the GitHub repository:
+
+```bash
+pip install git+https://github.com/isaacwilkinsonlongden/smart-file-organizer
+```
+
+After installation, the CLI command becomes available:
+
+```bash
+organize -h
+```
+
+---
+
+## Option 2 — Clone the repository (recommended for development)
+
+Clone the repository and install it in editable mode:
 
 ```bash
 git clone https://github.com/isaacwilkinsonlongden/smart-file-organizer
 cd smart-file-organizer
 
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 
 pip install -e .
 ```
 
-Once installed, the `organize` command will be available in your environment.
+Editable installs allow changes to the source code to immediately affect the installed tool.
 
 ---
 
