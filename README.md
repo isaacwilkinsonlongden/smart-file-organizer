@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen)
 ![CLI Tool](https://img.shields.io/badge/type-CLI%20tool-purple)
-![License](https://img.shields.io/badge/license-educational-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 A command-line tool that automatically organizes files into categorized folders based on file extensions.
 
