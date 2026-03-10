@@ -14,8 +14,12 @@ def plan_moves(
         directory: Path, 
         files: list[Path],
         config: Config,
+        output_root: Path | None = None,
         recursive: bool = False
     ) -> list[PlannedMove]:
+    if output_root is None:
+        output_root = directory
+        
     planned_moves = []
     if recursive:
         active_categories = set(config.ext_to_category.values())
@@ -32,7 +36,7 @@ def plan_moves(
             config.use_fallback_category
         )
         if category is not None:
-            destination = directory / category / file.name
+            destination = output_root / category / file.name
             if file == destination:
                 continue
             planned_moves.append(PlannedMove(

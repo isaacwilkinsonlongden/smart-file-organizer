@@ -1,7 +1,5 @@
-from pathlib import Path
-
-from organizer.organizer import plan_moves
 from organizer.config import resolve_config
+from organizer.organizer import plan_moves
 
 
 def test_plan_moves_creates_correct_destination(tmp_path, monkeypatch):
@@ -104,3 +102,44 @@ def test_plan_moves_recursive_skips_nested_category_folder(tmp_path, monkeypatch
     moves = plan_moves(tmp_path, [file_path], config, recursive=True)
 
     assert moves == []
+
+
+def test_plan_moves_uses_custom_output_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+    file_path = tmp_path / "photo.jpg"
+    file_path.touch()
+
+    output_root = tmp_path / "organized"
+    output_root.mkdir()
+
+    config = resolve_config()
+    moves = plan_moves(tmp_path, [file_path], config, output_root=output_root)
+
+    assert len(moves) == 1
+    assert moves[0].destination == output_root / "Images" / "photo.jpg"
+
+
+def test_plan_moves_recursive_uses_custom_output_root(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+
+    nested_file = subdir / "photo.jpg"
+    nested_file.touch()
+
+    output_root = tmp_path / "organized"
+    output_root.mkdir()
+
+    config = resolve_config()
+    moves = plan_moves(
+        tmp_path,
+        [nested_file],
+        config,
+        output_root=output_root,
+        recursive=True,
+    )
+
+    assert len(moves) == 1
+    assert moves[0].destination == output_root / "Images" / "photo.jpg"

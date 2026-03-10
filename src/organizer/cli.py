@@ -136,6 +136,14 @@ def handle_run_command(args: argparse.Namespace) -> int:
 
     files = list_files(directory, recursive=args.recursive)
 
+    output_root = (
+        directory if args.output is None 
+        else Path(args.output).expanduser().resolve()
+    )
+    if output_root != directory:
+        if not validate_directory(output_root):
+            return 1
+
     try:
         config = resolve_config()
     except ConfigError as e:
@@ -146,6 +154,7 @@ def handle_run_command(args: argparse.Namespace) -> int:
         directory,
         files,
         config,
+        output_root,
         recursive=args.recursive,
     )
 
@@ -163,7 +172,7 @@ def handle_run_command(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    print_execution(result, directory, files, args.dry_run)
+    print_execution(result, directory, output_root, files, args.dry_run)
     return 0
 
 
@@ -200,6 +209,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--recursive",
         action="store_true",
         help="Recursively organize files in child directories",
+    )
+    run_parser.add_argument(
+        "-o",
+        "--output",
+        help="Destination directory for organized files",
     )
 
     # ---- config ----
@@ -292,6 +306,7 @@ def group_moves(planned_moves: list[PlannedMove]) -> dict[str, list[PlannedMove]
 def print_execution(
     result: ExecutionResult,
     directory: Path,
+    output_root: Path,
     files: list[Path],
     dry_run: bool = False,
 ) -> None:
@@ -314,7 +329,7 @@ def print_execution(
         for move in moves:
             print(
                 f"   {directory.name}/{move.source.relative_to(directory)} "
-                f"-> {directory.name}/{move.destination.relative_to(directory)}"
+                f"-> {output_root.name}/{move.destination.relative_to(output_root)}"
             )
 
     if result.skipped:
