@@ -2,10 +2,20 @@ import argparse
 import sys
 from pathlib import Path
 
+from .config import (
+    ConfigError,
+    get_config_path,
+    init_config,
+    reset_config_blank,
+    reset_config_default,
+    resolve_config,
+    set_extension,
+    show_config,
+    unset_extension,
+)
+from .executor import ExecutionResult, execute_moves
 from .filesystem import list_files
-from .organizer import plan_moves, PlannedMove
-from .executor import execute_moves, ExecutionResult
-from .config import ConfigError, resolve_config, get_config_path, init_config, set_extension, unset_extension, show_config, reset_config_default, reset_config_blank
+from .organizer import PlannedMove, plan_moves
 
 
 def run() -> None:
@@ -19,108 +29,142 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    # Dispatch
     if args.top_command == "config":
-        if args.config_command == "path":
-            print(get_config_path())
-            return 0
-
-        if args.config_command == "init":
-            try:
-                path = init_config()
-            except ConfigError as e:
-                print(f"Error: {e}", file=sys.stderr)
-                return 1
-            print(f"Created config at {path}")
-            return 0
-        
-        if args.config_command == "set":
-            try:
-                path = set_extension(args.extension, args.category)
-            except ConfigError as e:
-                print(f"Error: {e}", file=sys.stderr)
-                return 1
-            print(f"Updated config at {path}")
-            return 0
-        
-        if args.config_command == "unset":
-            try:
-                path = unset_extension(args.extension)
-            except ConfigError as e:
-                print(f"Error: {e}", file=sys.stderr)
-                return 1
-            print(f"Updated config at {path}")
-            return 0
-        
-        if args.config_command == "show":
-            try:
-                print(show_config())
-            except ConfigError as e:
-                print(f"Error: {e}", file=sys.stderr)
-                return 1
-            return 0
-        
-        if args.config_command == "reset":
-            if args.default:
-                try:
-                    path = reset_config_default()
-                except ConfigError as e:
-                    print(f"Error: {e}", file=sys.stderr)
-                    return 1
-                print(f"Reset to default config at {path}")
-                return 0
-            elif args.blank:
-                try:
-                    path = reset_config_blank()
-                except ConfigError as e:
-                    print(f"Error: {e}", file=sys.stderr)
-                    return 1
-                print(f"Reset to blank config at {path}")
-                return 0
-
-        # Should be unreachable due to argparse choices
-        print("Unknown config command", file=sys.stderr)
-        return 1
+        return handle_config_command(args)
 
     if args.top_command == "run":
-        directory = Path(args.directory).expanduser().resolve()
-        if not validate_directory(directory):
-            return 1
+        return handle_run_command(args)
 
-        files = list_files(directory, recursive=args.recursive)
-
-        try:
-            config = resolve_config()
-        except ConfigError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-        planned_moves = plan_moves(
-                            directory,
-                            files,
-                            config, 
-                            recursive=args.recursive
-                        )
-        if not planned_moves:
-            print("Nothing to organize.")
-            return 0
-
-        try:
-            result = execute_moves(
-                planned_moves,
-                dry_run=args.dry_run,
-                collision_policy=args.collision,
-            )
-        except FileExistsError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 1
-
-        print_execution(result, directory, files, args.dry_run)
-        return 0
-
-    # Should be unreachable due to argparse required subparsers
     parser.print_help()
     return 1
+
+
+def handle_config_command(args: argparse.Namespace) -> int:
+    if args.config_command == "path":
+        return handle_config_path()
+
+    if args.config_command == "init":
+        return handle_config_init()
+
+    if args.config_command == "set":
+        return handle_config_set(args)
+
+    if args.config_command == "unset":
+        return handle_config_unset(args)
+
+    if args.config_command == "show":
+        return handle_config_show()
+
+    if args.config_command == "reset":
+        return handle_config_reset(args)
+
+    print("Unknown config command", file=sys.stderr)
+    return 1
+
+
+def handle_config_path() -> int:
+    print(get_config_path())
+    return 0
+
+
+def handle_config_init() -> int:
+    try:
+        path = init_config()
+    except ConfigError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"Created config at {path}")
+    return 0
+
+
+def handle_config_set(args: argparse.Namespace) -> int:
+    try:
+        path = set_extension(args.extension, args.category)
+    except ConfigError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"Updated config at {path}")
+    return 0
+
+
+def handle_config_unset(args: argparse.Namespace) -> int:
+    try:
+        path = unset_extension(args.extension)
+    except ConfigError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"Updated config at {path}")
+    return 0
+
+
+def handle_config_show() -> int:
+    try:
+        print(show_config(), end="")
+    except ConfigError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    return 0
+
+
+def handle_config_reset(args: argparse.Namespace) -> int:
+    try:
+        if args.default:
+            path = reset_config_default()
+            print(f"Reset to default config at {path}")
+            return 0
+
+        if args.blank:
+            path = reset_config_blank()
+            print(f"Reset to blank config at {path}")
+            return 0
+    except ConfigError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    print("Error: reset mode not specified", file=sys.stderr)
+    return 1
+
+
+def handle_run_command(args: argparse.Namespace) -> int:
+    directory = Path(args.directory).expanduser().resolve()
+    if not validate_directory(directory):
+        return 1
+
+    files = list_files(directory, recursive=args.recursive)
+
+    try:
+        config = resolve_config()
+    except ConfigError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    planned_moves = plan_moves(
+        directory,
+        files,
+        config,
+        recursive=args.recursive,
+    )
+
+    if not planned_moves:
+        print("Nothing to organize.")
+        return 0
+
+    try:
+        result = execute_moves(
+            planned_moves,
+            dry_run=args.dry_run,
+            collision_policy=args.collision,
+        )
+    except FileExistsError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    print_execution(result, directory, files, args.dry_run)
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -155,7 +199,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-r",
         "--recursive",
         action="store_true",
-        help="Recursively organize files in child directories"
+        help="Recursively organize files in child directories",
     )
 
     # ---- config ----
@@ -177,6 +221,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Create a minimal default config file (if missing)",
         description="Create a minimal default config file if one does not already exist.",
     )
+
     set_parser = config_sub.add_parser(
         "set",
         help="Add or update an extension mapping",
@@ -190,6 +235,7 @@ def build_parser() -> argparse.ArgumentParser:
         "category",
         help="Category folder name (e.g. Music)",
     )
+
     unset_parser = config_sub.add_parser(
         "unset",
         help="Remove an extension mapping",
@@ -197,13 +243,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     unset_parser.add_argument(
         "extension",
-        help="File extension to map (e.g. .mp3)",
+        help="File extension to remove (e.g. .mp3)",
     )
+
     config_sub.add_parser(
         "show",
         help="Show the current config file",
         description="Print the contents of the current config file",
     )
+
     reset_parser = config_sub.add_parser(
         "reset",
         help="Reset the config to default or blank",
@@ -218,7 +266,7 @@ def build_parser() -> argparse.ArgumentParser:
     mode_group.add_argument(
         "--blank",
         action="store_true",
-        help="Reset the config to a blank config (No merge defaults, no fallback category)",
+        help="Reset the config to a blank config (no merged defaults, no fallback category)",
     )
 
     return parser
